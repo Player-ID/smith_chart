@@ -1,20 +1,3 @@
-/**
- * JSON-like object with Smith chart guideline information
- *
- * resistances
- *   - label : array of numbers
- *   - lines : array of objects
- *     - clipStart : 0 if undefined
- *     - clipStop  : infinity if undefined, reflected about x-axis
- *     - values    : array of numbers
- *
- * reactances (0 is ignored, draw horizontal axis separately)
- *   - label: array of numbers, reflected about x-axis
- *   - lines: array of objects
- *     - clipStart : 0 if undefined
- *     - clipStop  : infinity if undefined
- *     - values    : array of numbers
- */
 var guidelineData = {
     resistances: {
         labels: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 3.0, 4.0, 5.0, 10, 20, 50],
@@ -45,7 +28,7 @@ var guidelineData = {
             },
             {
                 clipStop: 5,
-                values: [0.2, 0.4, 0.6, 0.8, 1.2, 1.4, 1.6, 1.8]
+                values: [0.2, 0.4, 0.6, 0.8, 1.2, 1.4, 1.6, 1.8, 2.2, 2.4, 2.6, 2.8, 3.2, 3.4, 3.6, 3.8, 4.2, 4.4, 4.6, 4.8]
             },
             {
                 clipStop: 10,
@@ -57,7 +40,7 @@ var guidelineData = {
             },
             {
                 clipStop: 50,
-                values: [30, 40]
+                values: [20, 30, 40]
             }
         ]
     },
@@ -90,7 +73,7 @@ var guidelineData = {
             },
             {
                 clipStop: 5,
-                values: [0.2, 0.4, 0.6, 0.8, 1.2, 1.4, 1.6, 1.8, 2.2, 2.4, 2.6, 2.8, 3.2, 3.4, 3.5, 3.6, 3.8, 4.2, 4.4, 4.6, 4.8]
+                values: [0.2, 0.4, 0.6, 0.8, 1.2, 1.4, 1.6, 1.8, 2.2, 2.4, 2.6, 2.8, 3.2, 3.4, 3.6, 3.8, 4.2, 4.4, 4.6, 4.8]
             },
             {
                 clipStop: 10,
@@ -98,7 +81,7 @@ var guidelineData = {
             },
             {
                 clipStop: 20,
-                values: [2, 4, 6, 8, 14, 16, 18]
+                values: [2, 4, 6, 8, 10, 14, 16, 18]
             },
             {
                 clipStop: 50,
