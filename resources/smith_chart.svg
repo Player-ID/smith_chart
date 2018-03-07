@@ -364,11 +364,11 @@
     <path d="M505.47 867.13c45.39 52.83 91.37 93.44 162.65 119.79" id="path726" fill="none" stroke="#000" stroke-width=".664"/>
     <path id="line728" class="fil0 str4" fill="none" stroke="#000" stroke-width=".664" d="M1158.4 527.7l-.8-2.46"/>
     <path d="M720.28 880.67c-75.99-51.83-130.4-141.61-131.73-230.6-1.26-83.15 20.57-186.74 132.26-263.92" id="path730" fill="none" stroke="#000" stroke-width=".664"/>
-    <ellipse cx="107.95" cy="144.3" rx="95.359" ry="95.239" transform="rotate(-90 512.445 837.355) scale(6.6361)" id="ellipse732" fill="none" stroke="#00f" stroke-width=".2"/>
-    <ellipse cx="107.95" cy="144.3" rx="92.237" ry="92.121" transform="rotate(-90 512.445 837.355) scale(6.6361)" id="ellipse734" fill="none" stroke="#00f" stroke-width=".2"/>
-    <ellipse cx="107.95" cy="144.3" rx="85.751" ry="85.643" transform="rotate(-90 512.445 837.355) scale(6.6361)" id="ellipse736" fill="none" stroke="red" stroke-width=".2"/>
-    <ellipse cx="107.95" cy="144.3" rx="88.874" ry="88.762" transform="rotate(-90 512.445 837.355) scale(6.6361)" id="ellipse738" fill="none" stroke="#00f" stroke-width=".2"/>
-    <ellipse cx="107.95" cy="144.3" rx="82.613" ry="82.509" transform="rotate(-90 512.445 837.355) scale(6.6361)" id="ellipse740" fill="none" stroke="#00f" stroke-width=".2"/>
+    <ellipse cx="107.95" cy="144.3" rx="95.359" ry="95.239" transform="rotate(-90 512.445 837.355) scale(6.6361)" id="ellipse732" fill="none" stroke="black" stroke-width=".2"/>
+    <ellipse cx="107.95" cy="144.3" rx="92.237" ry="92.121" transform="rotate(-90 512.445 837.355) scale(6.6361)" id="ellipse734" fill="none" stroke="black" stroke-width=".2"/>
+    <ellipse cx="107.95" cy="144.3" rx="85.751" ry="85.643" transform="rotate(-90 512.445 837.355) scale(6.6361)" id="ellipse736" fill="none" stroke="black" stroke-width=".2"/>
+    <ellipse cx="107.95" cy="144.3" rx="88.874" ry="88.762" transform="rotate(-90 512.445 837.355) scale(6.6361)" id="ellipse738" fill="none" stroke="black" stroke-width=".2"/>
+    <ellipse cx="107.95" cy="144.3" rx="82.613" ry="82.509" transform="rotate(-90 512.445 837.355) scale(6.6361)" id="ellipse740" fill="none" stroke="black" stroke-width=".2"/>
     <path id="line742" class="fil0 str7" fill="none" stroke="#000" stroke-width=".664" d="M16.982 617.62l9.244-.06"/>
     <path id="line744" class="fil0 str7" fill="none" stroke="#000" stroke-width=".664" d="M18.176 602.55l9.244-.13"/>
     <path id="line746" class="fil0 str7" fill="none" stroke="#000" stroke-width=".664" d="M18.375 586.76l9.244.46"/>

@@ -58,7 +58,7 @@ function calculateGamma(r, x, center, unitRadius) {
 
     var x = center + unitRadius * gamma.r * Math.cos(gamma.phi);
     var y = center - unitRadius * gamma.r * Math.sin(gamma.phi);
-    
+
     return {
         gamma: gamma,
         x: x,
@@ -113,6 +113,9 @@ var data = [
     }
 ];
 
+
+var MAX_CURSORS = 10;
+data.length = Math.min(data.length, MAX_CURSORS);
 data.forEach(function (z) {
     z.resistance = calculateResistanceCircle(z.resistance, chartDimensions.center, chartDimensions.unitRadius);
     z.reactance = calculateReactanceCircle(z.reactance, chartDimensions.center, chartDimensions.unitRadius);
@@ -121,13 +124,37 @@ data.forEach(function (z) {
     z.gamma = gamma;
 });
 
-var markerGroup = chart.append("g")
-    .attr("id", "markerGroup");
+var cursors = chart.append("g")
+    .attr("id", "cursors");
 
-markerGroup.selectAll(".markers")
+var colorInterpolator = d3.scaleLinear()
+    .domain([0, data.length - 1])
+    .range(['#f00', '#00f'])
+    .interpolate(d3.interpolateRgb);
+
+cursors.selectAll(".cursors")
     .data(data)
-    .enter().append("circle")
-    .attr("cx", function (d) { return d.gamma.x; })
-    .attr("cy", function (d) { return d.gamma.y; })
-    .attr("r", 5)
-    .attr("fill", "purple");
+    .enter().append("g")
+    .attr("class", function (cursorData, i) { return "cursor" + i; })
+    .each(function (cursorData, i) {
+        var cursorGroup = d3.select(this);
+        var color = colorInterpolator(i);
+
+        cursorGroup.selectAll(".marker")
+            .data([cursorData.gamma])
+            .enter().append("circle")
+            .attr("cx", function (marker) { return marker.x; })
+            .attr("cy", function (marker) { return marker.y; })
+            .attr("r", 5)
+            .attr("fill", color);
+
+        cursorGroup.selectAll(".resistanceCircle")
+            .data([cursorData.resistance])
+            .enter().append("circle")
+            .attr("cx", function (circle) { return circle.cx; })
+            .attr("cy", function (circle) { return circle.cy; })
+            .attr("r", function (circle) { return circle.r; })
+            .attr("stroke", color)
+            .attr("stroke-width", 3)
+            .attr("fill", "none");
+    });
