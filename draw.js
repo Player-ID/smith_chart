@@ -1,9 +1,21 @@
 function calculateResistanceCircle(value, center, unitRadius) {
+    if (value < 0) {
+        throw "Resistance value cannot be negative!";
+    } else if (value == Infinity) {
+        return {
+            value: value,
+            cx: center + unitRadius,
+            cy: center,
+            r: 1
+        };
+    }
+
     var cx = center + unitRadius * value / (value + 1);
     var cy = center;
     var r = Math.abs(unitRadius / (value + 1));
 
     return {
+        value: value,
         cx: cx,
         cy: cy,
         r: r
@@ -11,170 +23,138 @@ function calculateResistanceCircle(value, center, unitRadius) {
 }
 
 function calculateReactanceCircle(value, center, unitRadius) {
+    if (Math.abs(value) == Infinity) {
+        return {
+            value: value,
+            cx: center + unitRadius,
+            cy: center,
+            r: 1
+        };
+    }
+
     var cx = center + unitRadius;
     var cy = center - unitRadius / value;
     var r = Math.abs(unitRadius / value);
 
     return {
+        value: value,
         cx: cx,
         cy: cy,
         r: r
     };
 }
 
-function generateMaskForResistance(defs, clipStart, clipStop, center, unitRadius) {
-    var maskId = "resistance_" + clipStart + "_" + clipStop;
-    var mask = defs.append("mask")
-        .attr("id", maskId);
-
-    if (typeof clipStart === "undefined") {
-        // No starting clip means full canvas as drawable area
-        mask.append("circle")
-            .attr("cx", center)
-            .attr("cy", center)
-            .attr("r", unitRadius + 5) // Add any value to account for thickness
-            .attr("fill", "white");
-    } else {
-        // Drawable area is +/- reactance circles corresponding to clipStart
-        var posBase = calculateReactanceCircle(clipStart, center, unitRadius);
-        var negBase = calculateReactanceCircle(-clipStart, center, unitRadius);
-        mask.append("circle")
-            .attr("cx", posBase.cx)
-            .attr("cy", posBase.cy)
-            .attr("r", posBase.r)
-            .attr("fill", "white");
-        mask.append("circle")
-            .attr("cx", negBase.cx)
-            .attr("cy", negBase.cy)
-            .attr("r", negBase.r)
-            .attr("fill", "white");
+function calculateGamma(r, x, center, unitRadius) {
+    if (r.value == Infinity || Math.abs(x.value) == Infinity) {
+        return {
+            gamma: math.complex(1, 0).toPolar(),
+            x: center + unitRadius,
+            y: center
+        };
     }
 
-    if (typeof clipStop !== "undefined") {
-        // Erase mask using corresponding reactance circles
-        var posClip = calculateReactanceCircle(clipStop, center, unitRadius);
-        var negClip = calculateReactanceCircle(-clipStop, center, unitRadius);
-        mask.append("circle")
-            .attr("cx", posClip.cx)
-            .attr("cy", posClip.cy)
-            .attr("r", posClip.r)
-            .attr("fill", "black");
-        mask.append("circle")
-            .attr("cx", negClip.cx)
-            .attr("cy", negClip.cy)
-            .attr("r", negClip.r)
-            .attr("fill", "black");
-    }
+    var z = math.complex(r.value, x.value);
+    var gamma = math.divide(math.subtract(z, 1), math.add(z, 1)).toPolar();
 
-    return maskId;
-}
+    var x = center + unitRadius * gamma.r * Math.cos(gamma.phi);
+    var y = center - unitRadius * gamma.r * Math.sin(gamma.phi);
 
-function generateMaskForReactance(defs, clipStart, clipStop, center, unitRadius) {
-    var maskId = "reactance_" + clipStart + "_" + clipStop;
-    var mask = defs.append("mask")
-        .attr("id", maskId);
-
-    clipStart = (typeof clipStart === "undefined") ? 0 : clipStart;
-    var base = calculateResistanceCircle(clipStart, center, unitRadius);
-    mask.append("circle")
-        .attr("cx", base.cx)
-        .attr("cy", base.cy)
-        .attr("r", base.r) // Add any value to account for thickness
-        .attr("fill", "white");
-
-    if (typeof clipStop !== "undefined") {
-        var clip = calculateResistanceCircle(clipStop, center, unitRadius);
-        mask.append("circle")
-            .attr("cx", clip.cx)
-            .attr("cy", clip.cy)
-            .attr("r", clip.r) // Add any value to account for thickness
-            .attr("fill", "black");
-    }
-
-    return maskId;
+    return {
+        gamma: gamma,
+        x: x,
+        y: y
+    };
 }
 
 var chartDimensions = {
-    canvasWidth: 1002,
-    center: 501,
-    unitRadius: 500
+    width: 1300, // from svg image
+    center: 649, // 1300/2 - 1
+    unitRadius: 547 // determined experimentally from drawinng lines on svg
 };
 
+var minWidth = Math.min(window.innerHeight, window.innerWidth);
 var chart = d3.select("#chart-area")
     .append("svg")
-    .attr("width", chartDimensions.canvasWidth)
-    .attr("height", chartDimensions.canvasWidth);
+    .attr("height", chartDimensions.width)
+    .attr("width", chartDimensions.width)
+    .attr("viewBox", "0 0 " + chartDimensions.width + " " + chartDimensions.width);
 
-chart.append("defs")
-    .attr("id", "guideline-masks");
-var guidelines = chart.append("g")
-    .attr("id", "guidelines");
-var resistanceGuidelines = guidelines.append("g")
-    .attr("id", "guidelines-resistance");
-var reactanceGuidelines = guidelines.append("g")
-    .attr("id", "guidelines-reactance");
+var smithChartImage = chart.append("image")
+    .attr("x", "0")
+    .attr("y", "0")
+    .attr("height", chartDimensions.width)
+    .attr("width", chartDimensions.width)
+    .attr("xlink:href", "./resources/smith_chart.svg");
 
-guidelineData.resistances.lines.forEach(function (clippingGroup) {
-    var defs = d3.select("#guideline-masks");
-    var maskId = "url(#" + generateMaskForResistance(
-        defs,
-        clippingGroup.clipStart,
-        clippingGroup.clipStop,
-        chartDimensions.center,
-        chartDimensions.unitRadius
-    ) + ")";
+var data = [
+    {
+        resistance: 1,
+        reactance: 0
+    },
+    {
+        resistance: 0.5,
+        reactance: -2
+    },
+    {
+        resistance: 0,
+        reactance: 1
+    },
+    {
+        resistance: Infinity,
+        reactance: -1
+    },
+    {
+        resistance: 1,
+        reactance: Infinity
+    },
+    {
+        resistance: 0,
+        reactance: 0
+    }
+];
 
-    resistanceGuidelines.selectAll(".guidelines")
-        .data(clippingGroup.values.map(function (value) {
-            return calculateResistanceCircle(
-                value,
-                chartDimensions.center,
-                chartDimensions.unitRadius
-            );
-        }))
-        .enter().append("circle")
-        .attr("cx", function (c) { return c.cx; })
-        .attr("cy", function (c) { return c.cy; })
-        .attr("r", function (c) { return c.r; })
-        .attr("mask", maskId)
-        .attr("stroke", "black")
-        .attr("fill", "none");
+
+var MAX_CURSORS = 10;
+data.length = Math.min(data.length, MAX_CURSORS);
+data.forEach(function (z) {
+    z.resistance = calculateResistanceCircle(z.resistance, chartDimensions.center, chartDimensions.unitRadius);
+    z.reactance = calculateReactanceCircle(z.reactance, chartDimensions.center, chartDimensions.unitRadius);
+
+    var gamma = calculateGamma(z.resistance, z.reactance, chartDimensions.center, chartDimensions.unitRadius);
+    z.gamma = gamma;
 });
 
-reactanceGuidelines.append("line")
-    .attr("x1", chartDimensions.center - chartDimensions.unitRadius)
-    .attr("y1", chartDimensions.center)
-    .attr("x2", chartDimensions.center + chartDimensions.unitRadius)
-    .attr("y2", chartDimensions.center)
-    .attr("stroke", "black")
+var cursors = chart.append("g")
+    .attr("id", "cursors");
 
-guidelineData.reactances.lines.forEach(function (clippingGroup) {
-    var defs = d3.select("#guideline-masks");
-    var maskId = "url(#" + generateMaskForReactance(
-        defs,
-        clippingGroup.clipStart,
-        clippingGroup.clipStop,
-        chartDimensions.center,
-        chartDimensions.unitRadius
-    ) + ")";
+var colorInterpolator = d3.scaleLinear()
+    .domain([0, data.length - 1])
+    .range(['#f00', '#00f'])
+    .interpolate(d3.interpolateRgb);
 
-    var negativeValues = clippingGroup.values.map(function (value) {
-        return -value;
+cursors.selectAll(".cursors")
+    .data(data)
+    .enter().append("g")
+    .attr("class", function (cursorData, i) { return "cursor" + i; })
+    .each(function (cursorData, i) {
+        var cursorGroup = d3.select(this);
+        var color = colorInterpolator(i);
+
+        cursorGroup.selectAll(".marker")
+            .data([cursorData.gamma])
+            .enter().append("circle")
+            .attr("cx", function (marker) { return marker.x; })
+            .attr("cy", function (marker) { return marker.y; })
+            .attr("r", 5)
+            .attr("fill", color);
+
+        cursorGroup.selectAll(".resistanceCircle")
+            .data([cursorData.resistance])
+            .enter().append("circle")
+            .attr("cx", function (circle) { return circle.cx; })
+            .attr("cy", function (circle) { return circle.cy; })
+            .attr("r", function (circle) { return circle.r; })
+            .attr("stroke", color)
+            .attr("stroke-width", 3)
+            .attr("fill", "none");
     });
-    var data = clippingGroup.values.concat(negativeValues);
-    reactanceGuidelines.selectAll(".guidelines")
-        .data(data.map(function (value) {
-            return calculateReactanceCircle(
-                value,
-                chartDimensions.center,
-                chartDimensions.unitRadius
-            );
-        }))
-        .enter().append("circle")
-        .attr("cx", function (c) { return c.cx; })
-        .attr("cy", function (c) { return c.cy; })
-        .attr("r", function (c) { return c.r; })
-        .attr("mask", maskId)
-        .attr("stroke", "black")
-        .attr("fill", "none");
-});
