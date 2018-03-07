@@ -69,7 +69,8 @@ function calculateGamma(r, x, center, unitRadius) {
 var chartDimensions = {
     width: 1300, // from svg image
     center: 649, // 1300/2 - 1
-    unitRadius: 547 // determined experimentally from drawinng lines on svg
+    unitRadius: 547, // determined experimentally
+    outerRadius: 640 // determined experimentally and slightly outside chart
 };
 
 var minWidth = Math.min(window.innerHeight, window.innerWidth);
@@ -85,6 +86,15 @@ var smithChartImage = chart.append("image")
     .attr("height", chartDimensions.width)
     .attr("width", chartDimensions.width)
     .attr("xlink:href", "./resources/smith_chart.svg");
+
+var chartBounds = calculateResistanceCircle(0, chartDimensions.center, chartDimensions.unitRadius);
+chart.append("defs")
+    .append("clipPath")
+    .attr("id", "boundary-clip")
+    .append("circle")
+    .attr("cx", chartBounds.cx)
+    .attr("cy", chartBounds.cy)
+    .attr("r", chartBounds.r);
 
 var data = [
     {
@@ -112,7 +122,6 @@ var data = [
         reactance: 0
     }
 ];
-
 
 var MAX_CURSORS = 10;
 data.length = Math.min(data.length, MAX_CURSORS);
@@ -157,4 +166,43 @@ cursors.selectAll(".cursors")
             .attr("stroke", color)
             .attr("stroke-width", 3)
             .attr("fill", "none");
+
+        if (cursorData.reactance.value === 0) {
+            cursorGroup.selectAll(".reactanceCircle")
+                .data([cursorData.reactance])
+                .enter().append("line")
+                .attr("x1", chartDimensions.center - chartDimensions.unitRadius)
+                .attr("y1", chartDimensions.center)
+                .attr("x2", chartDimensions.center + chartDimensions.unitRadius)
+                .attr("y2", chartDimensions.center)
+                .attr("stroke", color)
+                .attr("stroke-width", 3);
+        } else {
+            cursorGroup.selectAll(".reactanceCircle")
+                .data([cursorData.reactance])
+                .enter().append("circle")
+                .attr("cx", function (circle) { return circle.cx; })
+                .attr("cy", function (circle) { return circle.cy; })
+                .attr("r", function (circle) { return circle.r; })
+                .attr("stroke", color)
+                .attr("stroke-width", 3)
+                .attr("fill", "none")
+                .attr("clip-path", "url(#boundary-clip)");
+        }
+
+        cursorGroup.selectAll(".electricLength")
+            .data([cursorData.gamma])
+            .enter().append("line")
+            .attr("x1", chartDimensions.center)
+            .attr("y1", chartDimensions.center)
+            .attr("x2", function (gamma) {
+                var arg = gamma.gamma.phi;
+                return chartDimensions.center + chartDimensions.outerRadius * Math.cos(arg);
+            })
+            .attr("y2", function (gamma) {
+                var arg = gamma.gamma.phi;
+                return chartDimensions.center - chartDimensions.outerRadius * Math.sin(arg);
+            })
+            .attr("stroke", color)
+            .attr("stroke-width", 3);
     });
