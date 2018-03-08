@@ -1,3 +1,48 @@
+var DRAG_HITBOX_RADIUS_THRESHOLD = 10;
+var MAX_CURSORS = 10;
+
+var minWidth = Math.min(window.innerHeight, window.innerWidth);
+var chartDimensions = {
+    width: 1300, // from svg image
+    center: 649, // 1300/2 - 1
+    unitRadius: 547, // determined experimentally
+    outerRadius: 640 // determined experimentally and slightly outside chart
+};
+var data = [
+    {
+        resistance: 1,
+        reactance: 0
+    },
+    {
+        resistance: 0,
+        reactance: 0
+    }
+];
+
+data.length = Math.min(data.length, MAX_CURSORS);
+data.forEach(function (cursor, i) {
+    cursor.resistance = calculateResistanceCircle(
+        cursor.resistance,
+        chartDimensions.center,
+        chartDimensions.unitRadius
+    );
+    cursor.reactance = calculateReactanceCircle(
+        cursor.reactance,
+        chartDimensions.center,
+        chartDimensions.unitRadius
+    );
+    cursor.gamma = calculateGamma(
+        cursor.resistance,
+        cursor.reactance,
+        chartDimensions.center,
+        chartDimensions.unitRadius
+    );
+    cursor.i = i;
+});
+
+var colorInterpolator = d3.scaleOrdinal()
+    .range(d3.schemeCategory10);
+
 function calculateResistanceCircle(value, center, unitRadius) {
     if (value < 0) {
         throw "Resistance value cannot be negative!";
@@ -66,14 +111,98 @@ function calculateGamma(r, x, center, unitRadius) {
     };
 }
 
-var chartDimensions = {
-    width: 1300, // from svg image
-    center: 649, // 1300/2 - 1
-    unitRadius: 547, // determined experimentally
-    outerRadius: 640 // determined experimentally and slightly outside chart
-};
+function dragSubject() {
+    var subject;
+    var closestDistance2 = math.pow(DRAG_HITBOX_RADIUS_THRESHOLD, 2);
 
-var minWidth = Math.min(window.innerHeight, window.innerWidth);
+    data.forEach(function (cursor, i) {
+        var dx = d3.event.x - cursor.gamma.x;
+        var dy = d3.event.y - cursor.gamma.y;
+        var distance2 = dx * dx + dy * dy;
+        if (distance2 < closestDistance2) {
+            subject = cursor;
+            closestDistance2 = distance2;
+        }
+    });
+
+    return subject;
+}
+
+function dragStarted() {
+    d3.select("#cursor" + d3.event.subject.i).raise();
+}
+
+function dragged(d) {
+    var cursor = d3.event.subject;
+
+    var x = d3.event.x - chartDimensions.center;
+    var y = -(d3.event.y - chartDimensions.center);
+
+    var normX = Math.sign(x) *
+        Math.min(Math.abs(x), chartDimensions.unitRadius) / chartDimensions.unitRadius;
+    var normY = Math.sign(y) *
+        Math.min(Math.abs(y), chartDimensions.unitRadius) / chartDimensions.unitRadius;
+
+    var r = Math.sqrt(math.pow(normX, 2) + math.pow(normY, 2));
+    var phi;
+    if (normX === 0) {
+        phi = normY >= 0 ? Math.PI / 2 : -Math.PI / 2;
+    } else if (normX > 0) {
+        phi = Math.atan(normY / normX);
+    } else {
+        phi = normY >= 0 ?
+            Math.PI + Math.atan(normY / normX) :
+            -Math.PI + Math.atan(normY / normX);
+    }
+
+    var gamma = math.complex({ r: r, phi: phi });
+    var impedance = math.divide(math.add(1, gamma), math.subtract(1, gamma));
+
+    cursor.resistance = calculateResistanceCircle(
+        math.re(impedance) < 0 ? 0 : math.re(impedance),
+        chartDimensions.center,
+        chartDimensions.unitRadius
+    );
+    cursor.reactance = calculateReactanceCircle(
+        math.im(impedance),
+        chartDimensions.center,
+        chartDimensions.unitRadius
+    );
+    cursor.gamma = {
+        gamma: gamma,
+        x: chartDimensions.center + chartDimensions.unitRadius * r * Math.cos(phi),
+        y: chartDimensions.center - chartDimensions.unitRadius * r * Math.sin(phi)
+    };
+
+    var cursorGroup = d3.select(this);
+
+    cursorGroup.select(".resistance-circle")
+        .attr("cx", cursor.resistance.cx)
+        .attr("cy", cursor.resistance.cy)
+        .attr("r", cursor.resistance.r);
+
+    cursorGroup.select(".reactance-line")
+        .attr("visibility", cursor.reactance.value === 0 ? "visible" : "hidden");
+
+    cursorGroup.select(".reactance-arc")
+        .attr("cx", cursor.reactance.cx)
+        .attr("cy", cursor.reactance.cy)
+        .attr("r", cursor.reactance.r)
+        .attr("visibility", cursor.reactance.value !== 0 ? "visible" : "hidden");
+
+    cursorGroup.select(".electric-length")
+        .attr("x2", chartDimensions.center + chartDimensions.outerRadius * Math.cos(phi))
+        .attr("y2", chartDimensions.center - chartDimensions.outerRadius * Math.sin(phi));
+
+    cursorGroup.select(".marker")
+        .attr("cx", cursor.gamma.x)
+        .attr("cy", cursor.gamma.y);
+}
+
+function dragEnded() {
+    // Do nothing
+}
+
 var chart = d3.select("#chart-area")
     .append("svg")
     .attr("height", chartDimensions.width)
@@ -81,6 +210,7 @@ var chart = d3.select("#chart-area")
     .attr("viewBox", "0 0 " + chartDimensions.width + " " + chartDimensions.width);
 
 var smithChartImage = chart.append("image")
+    .attr("id", "smith-chart-image")
     .attr("x", "0")
     .attr("y", "0")
     .attr("height", chartDimensions.width)
@@ -96,113 +226,68 @@ chart.append("defs")
     .attr("cy", chartBounds.cy)
     .attr("r", chartBounds.r);
 
-var data = [
-    {
-        resistance: 1,
-        reactance: 0
-    },
-    {
-        resistance: 0.5,
-        reactance: -2
-    },
-    {
-        resistance: 0,
-        reactance: 1
-    },
-    {
-        resistance: Infinity,
-        reactance: -1
-    },
-    {
-        resistance: 1,
-        reactance: Infinity
-    },
-    {
-        resistance: 0,
-        reactance: 0
-    }
-];
-
-var MAX_CURSORS = 10;
-data.length = Math.min(data.length, MAX_CURSORS);
-data.forEach(function (z) {
-    z.resistance = calculateResistanceCircle(z.resistance, chartDimensions.center, chartDimensions.unitRadius);
-    z.reactance = calculateReactanceCircle(z.reactance, chartDimensions.center, chartDimensions.unitRadius);
-
-    var gamma = calculateGamma(z.resistance, z.reactance, chartDimensions.center, chartDimensions.unitRadius);
-    z.gamma = gamma;
-});
-
 var cursors = chart.append("g")
     .attr("id", "cursors");
 
-var colorInterpolator = d3.scaleLinear()
-    .domain([0, data.length - 1])
-    .range(['#f00', '#00f'])
-    .interpolate(d3.interpolateRgb);
-
-cursors.selectAll(".cursors")
+var cursorGroup = cursors.selectAll("g")
     .data(data)
     .enter().append("g")
-    .attr("class", function (cursorData, i) { return "cursor" + i; })
-    .each(function (cursorData, i) {
-        var cursorGroup = d3.select(this);
-        var color = colorInterpolator(i);
+    .attr("id", function (d) { return "cursor" + d.i; })
+    .call(d3.drag()
+        .subject(dragSubject)
+        .on("start", dragStarted)
+        .on("drag", dragged)
+        //.on("end", dragEnded)
+    );
 
-        cursorGroup.selectAll(".marker")
-            .data([cursorData.gamma])
-            .enter().append("circle")
-            .attr("cx", function (marker) { return marker.x; })
-            .attr("cy", function (marker) { return marker.y; })
-            .attr("r", 5)
-            .attr("fill", color);
+cursorGroup.append("circle")
+    .attr("class", "resistance-circle")
+    .attr("cx", function (d) { return d.resistance.cx; })
+    .attr("cy", function (d) { return d.resistance.cy; })
+    .attr("r", function (d) { return d.resistance.r; })
+    .attr("stroke", function (d) { return colorInterpolator(d.i); })
+    .attr("stroke-width", 3)
+    .attr("fill", "none");
 
-        cursorGroup.selectAll(".resistanceCircle")
-            .data([cursorData.resistance])
-            .enter().append("circle")
-            .attr("cx", function (circle) { return circle.cx; })
-            .attr("cy", function (circle) { return circle.cy; })
-            .attr("r", function (circle) { return circle.r; })
-            .attr("stroke", color)
-            .attr("stroke-width", 3)
-            .attr("fill", "none");
+cursorGroup.append("line")
+    .attr("class", "reactance-line")
+    .attr("x1", chartDimensions.center - chartDimensions.unitRadius)
+    .attr("y1", chartDimensions.center)
+    .attr("x2", chartDimensions.center + chartDimensions.unitRadius)
+    .attr("y2", chartDimensions.center)
+    .attr("stroke", function (d) { return colorInterpolator(d.i); })
+    .attr("stroke-width", 3)
+    .attr("visibility", function (d) { return d.reactance.value === 0 ? "visible" : "hidden"; });
 
-        if (cursorData.reactance.value === 0) {
-            cursorGroup.selectAll(".reactanceCircle")
-                .data([cursorData.reactance])
-                .enter().append("line")
-                .attr("x1", chartDimensions.center - chartDimensions.unitRadius)
-                .attr("y1", chartDimensions.center)
-                .attr("x2", chartDimensions.center + chartDimensions.unitRadius)
-                .attr("y2", chartDimensions.center)
-                .attr("stroke", color)
-                .attr("stroke-width", 3);
-        } else {
-            cursorGroup.selectAll(".reactanceCircle")
-                .data([cursorData.reactance])
-                .enter().append("circle")
-                .attr("cx", function (circle) { return circle.cx; })
-                .attr("cy", function (circle) { return circle.cy; })
-                .attr("r", function (circle) { return circle.r; })
-                .attr("stroke", color)
-                .attr("stroke-width", 3)
-                .attr("fill", "none")
-                .attr("clip-path", "url(#boundary-clip)");
-        }
+cursorGroup.append("circle")
+    .attr("class", "reactance-arc")
+    .attr("cx", function (d) { return d.reactance.cx; })
+    .attr("cy", function (d) { return Math.abs(d.reactance.cy) == Infinity ? 0 : d.reactance.cy; })
+    .attr("r", function (d) { return d.reactance.r == Infinity ? 0 : d.reactance.r; })
+    .attr("stroke", function (d) { return colorInterpolator(d.i); })
+    .attr("stroke-width", 3)
+    .attr("fill", "none")
+    .attr("clip-path", "url(#boundary-clip)")
+    .attr("visibility", function (d) { return d.reactance.value !== 0 ? "visible" : "hidden"; });
 
-        cursorGroup.selectAll(".electricLength")
-            .data([cursorData.gamma])
-            .enter().append("line")
-            .attr("x1", chartDimensions.center)
-            .attr("y1", chartDimensions.center)
-            .attr("x2", function (gamma) {
-                var arg = gamma.gamma.phi;
-                return chartDimensions.center + chartDimensions.outerRadius * Math.cos(arg);
-            })
-            .attr("y2", function (gamma) {
-                var arg = gamma.gamma.phi;
-                return chartDimensions.center - chartDimensions.outerRadius * Math.sin(arg);
-            })
-            .attr("stroke", color)
-            .attr("stroke-width", 3);
-    });
+cursorGroup.append("line")
+    .attr("class", "electric-length")
+    .attr("x1", chartDimensions.center)
+    .attr("y1", chartDimensions.center)
+    .attr("x2", function (d) {
+        return chartDimensions.center + chartDimensions.outerRadius * Math.cos(d.gamma.gamma.phi);
+    })
+    .attr("y2", function (d) {
+        return chartDimensions.center - chartDimensions.outerRadius * Math.sin(d.gamma.gamma.phi);
+    })
+    .attr("stroke", function (d) { return colorInterpolator(d.i); })
+    .attr("stroke-width", 3);
+
+cursorGroup.append("circle")
+    .attr("class", "marker")
+    .attr("cx", function (d) { return d.gamma.x; })
+    .attr("cy", function (d) { return d.gamma.y; })
+    .attr("r", 5)
+    .attr("fill", function (d) { return colorInterpolator(d.i); });
+
+console.log("Hello");
