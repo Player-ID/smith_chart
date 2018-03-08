@@ -1,4 +1,4 @@
-var DRAG_HITBOX_RADIUS_THRESHOLD = 10;
+var DRAG_HITBOX_RADIUS_THRESHOLD = 20;
 var MAX_CURSORS = 10;
 
 var minWidth = Math.min(window.innerHeight, window.innerWidth);
@@ -11,10 +11,6 @@ var chartDimensions = {
 var data = [
     {
         resistance: 1,
-        reactance: 0
-    },
-    {
-        resistance: 0,
         reactance: 0
     }
 ];
@@ -174,7 +170,7 @@ function dragged(d) {
         y: chartDimensions.center - chartDimensions.unitRadius * r * Math.sin(phi)
     };
 
-    var cursorGroup = d3.select(this);
+    var cursorGroup = d3.select("#cursor" + d3.event.subject.i);
 
     cursorGroup.select(".resistance-circle")
         .attr("cx", cursor.resistance.cx)
@@ -207,15 +203,29 @@ var chart = d3.select("#chart-area")
     .append("svg")
     .attr("height", chartDimensions.width)
     .attr("width", chartDimensions.width)
-    .attr("viewBox", "0 0 " + chartDimensions.width + " " + chartDimensions.width);
+    .attr("viewBox", "0 0 " + chartDimensions.width + " " + chartDimensions.width)
+    .call(d3.drag()
+        .subject(dragSubject)
+        .on("start", dragStarted)
+        .on("drag", dragged)
+        //.on("end", dragEnded)
+    );
 
-var smithChartImage = chart.append("image")
+chart.append("image")
     .attr("id", "smith-chart-image")
     .attr("x", "0")
     .attr("y", "0")
-    .attr("height", chartDimensions.width)
     .attr("width", chartDimensions.width)
+    .attr("height", chartDimensions.width)
     .attr("xlink:href", "./resources/smith_chart.svg");
+
+chart.append("rect")
+    .attr("id", "image-blocker")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", chartDimensions.width)
+    .attr("height", chartDimensions.width)
+    .attr("opacity", "0");
 
 var chartBounds = calculateResistanceCircle(0, chartDimensions.center, chartDimensions.unitRadius);
 chart.append("defs")
@@ -226,19 +236,12 @@ chart.append("defs")
     .attr("cy", chartBounds.cy)
     .attr("r", chartBounds.r);
 
-var cursors = chart.append("g")
-    .attr("id", "cursors");
-
-var cursorGroup = cursors.selectAll("g")
+var cursorGroup = chart.append("g")
+    .attr("id", "cursors")
+    .selectAll("g")
     .data(data)
     .enter().append("g")
-    .attr("id", function (d) { return "cursor" + d.i; })
-    .call(d3.drag()
-        .subject(dragSubject)
-        .on("start", dragStarted)
-        .on("drag", dragged)
-        //.on("end", dragEnded)
-    );
+    .attr("id", function (d) { return "cursor" + d.i; });
 
 cursorGroup.append("circle")
     .attr("class", "resistance-circle")
