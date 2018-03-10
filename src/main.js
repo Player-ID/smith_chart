@@ -7,7 +7,7 @@ import * as d3 from 'd3'
 import * as math from 'mathjs'
 import smithChartSvg from './assets/smith_chart.svg'
 
-Vue.config.productionTip = false
+Vue.config.productionTip = process.env.NODE_ENV === 'production'
 
 /* eslint-disable no-new */
 new Vue({
