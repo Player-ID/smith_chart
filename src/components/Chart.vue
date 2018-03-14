@@ -1,22 +1,77 @@
 <template>
-  <div id="chart-area"/>
+  <div id="chart-area">
+    <svg
+      :width="width"
+      :height="width"
+      :viewport="viewport"
+    >
+      <defs>
+        <clipPath id="boundary-clip">
+          <circle
+            :cx="chartBounds.cx"
+            :cy="chartBounds.cy"
+            :r="chartBounds.r"
+          />
+        </clipPath>
+      </defs>
+      <image
+        id="smith-chart-image"
+        :width="width"
+        :height="width"
+        x="0"
+        y="0"
+        xlink:href="../assets/smith_chart.svg"
+      />
+      <rect
+        id="image-blocker"
+        :width="width"
+        :height="width"
+        x="0"
+        y="0"
+        opacity="0"
+      />
+      <g id="cursors">
+        <ChartCursor
+          v-for="cursor in cursors"
+          :key="cursor.i"
+          :cursor="cursor"
+          :colorInterpolator="cursorOptions.colorInterpolator"
+        />
+      </g>
+    </svg>
+  </div>
 </template>
 
 <script>
+import ChartCursor from './ChartCursor.vue'
+
 import * as d3 from 'd3'
 import * as math from 'mathjs'
+
+import { WIDTH as SVG_WIDTH } from '../js/chartConfig.js'
 import * as calc from '../js/calculations.js'
-import { WIDTH, CENTER, UNIT_RADIUS, OUTER_RADIUS } from '../js/constants.js'
-import smithChartSvg from '../assets/smith_chart.svg'
 
 export default {
   name: 'Chart',
+  components: {
+    ChartCursor
+  },
   props: {
+    width: {
+      type: Number,
+      default: SVG_WIDTH
+    },
+    cursorOptions: {
+      type: Object,
+      default () {
+        return {
+          maxCursors: 10,
+          colorInterpolator: d3.scaleOrdinal().range(d3.schemeCategory10)
+        }
+      }
+    },
     cursors: {
       type: Array,
-      validator: data => {
-        return true
-      },
       default () {
         return []
       }
@@ -24,136 +79,18 @@ export default {
   },
   data: () => {
     return {
-      maxCursors: 10,
-      colorScale: d3.schemeCategory10,
-      dragRadiusThreshold: 20,
-      cursorWrapper: null
+      dragRadiusThreshold: 20
     }
   },
   computed: {
-    colorInterpolator () {
-      return d3.scaleOrdinal().range(this.colorScale)
+    viewport () {
+      return `0 0 ${SVG_WIDTH} ${SVG_WIDTH}`
     },
-    data () {
-      return this.cursors
+    chartBounds () {
+      return calc.calculateResistanceCircle(0)
     }
-  },
-  watch: {
-    cursors () {
-      this.updateCursors()
-    }
-  },
-  mounted () {
-    this.initialize()
   },
   methods: {
-    initialize () {
-      const chart = d3.select('#chart-area')
-        .append('svg')
-        .attr('height', WIDTH)
-        .attr('width', WIDTH)
-        .attr('viewBox', '0 0 ' + WIDTH + ' ' + WIDTH)
-        .call(d3.drag()
-          .subject(this.dragSubject)
-          .on('start', this.dragStarted)
-          .on('drag', this.dragged)
-        )
-
-      chart.append('image')
-        .attr('id', 'smith-chart-image')
-        .attr('x', '0')
-        .attr('y', '0')
-        .attr('width', WIDTH)
-        .attr('height', WIDTH)
-        .attr('xlink:href', smithChartSvg)
-
-      chart.append('rect')
-        .attr('id', 'image-blocker')
-        .attr('x', 0)
-        .attr('y', 0)
-        .attr('width', WIDTH)
-        .attr('height', WIDTH)
-        .attr('opacity', '0')
-
-      let chartBounds = calc.calculateResistanceCircle(0)
-      chart.append('defs')
-        .append('clipPath')
-        .attr('id', 'boundary-clip')
-        .append('circle')
-        .attr('cx', chartBounds.cx)
-        .attr('cy', chartBounds.cy)
-        .attr('r', chartBounds.r)
-
-      this.cursorWrapper = chart.append('g')
-        .attr('id', 'cursors')
-    },
-    updateCursors () {
-      console.log(this)
-      console.log(this.cursors)
-      console.log(this.data)
-      this.cursorWrapper.selectAll('g')
-        .data(this.cursors)
-        .enter().append('g')
-      // // Data join
-      // const cursorGroup = this.cursorWrapper.selectAll('g')
-      //   .data(this.cursors)
-
-      // // Enter
-      // const cursorGroupEnter = cursorGroup.enter().append('g')
-      // cursorGroupEnter.append('circle')
-      //   .attr('class', 'resistance-circle')
-      //   .attr('stroke-width', 3)
-      //   .attr('fill', 'none')
-      // cursorGroupEnter.append('line')
-      //   .attr('class', 'reactance-line')
-      //   .attr('x1', CENTER - UNIT_RADIUS)
-      //   .attr('y1', CENTER)
-      //   .attr('x2', CENTER + UNIT_RADIUS)
-      //   .attr('y2', CENTER)
-      //   .attr('stroke-width', 3)
-      // cursorGroupEnter.append('circle')
-      //   .attr('class', 'reactance-arc')
-      //   .attr('stroke-width', 3)
-      //   .attr('fill', 'none')
-      //   .attr('clip-path', 'url(#boundary-clip)')
-      // cursorGroupEnter.append('line')
-      //   .attr('class', 'electric-length')
-      //   .attr('x1', CENTER)
-      //   .attr('y1', CENTER)
-      //   .attr('stroke-width', 3)
-      // cursorGroupEnter.append('circle')
-      //   .attr('class', 'marker')
-      //   .attr('r', 5)
-
-      // // Enter + Update
-      // const cursorGroupUpdate = cursorGroup.merge(cursorGroupEnter)
-      //   .attr('id', d => `cursor${d.i}`)
-      // cursorGroupUpdate.select('.resistance-circle')
-      //   .attr('cx', d => d.resistance.cx)
-      //   .attr('cy', d => d.resistance.cy)
-      //   .attr('r', d => d.resistance.r)
-      //   .attr('stroke', d => this.colorInterpolator(d.i))
-      // cursorGroupUpdate.select('.reactance-line')
-      //   .attr('visibility', d => d.reactance.value === 0 ? 'visible' : 'hidden')
-      //   .attr('stroke', d => this.colorInterpolator(d.i))
-      // cursorGroupUpdate.select('.reactance-arc')
-      //   .attr('cx', d => d.reactance.cx)
-      //   .attr('cy', d => Math.abs(d.reactance.cy) === Infinity ? 0 : d.reactance.cy)
-      //   .attr('r', d => d.reactance.r === Infinity ? 0 : d.reactance.r)
-      //   .attr('visibility', d => d.reactance.value !== 0 ? 'visible' : 'hidden')
-      //   .attr('stroke', d => this.colorInterpolator(d.i))
-      // cursorGroupUpdate.select('.electric-length')
-      //   .attr('x2', d => CENTER + OUTER_RADIUS * Math.cos(d.gamma.gamma.phi))
-      //   .attr('y2', d => CENTER - OUTER_RADIUS * Math.sin(d.gamma.gamma.phi))
-      //   .attr('stroke', d => this.colorInterpolator(d.i))
-      // cursorGroupUpdate.select('.marker')
-      //   .attr('cx', d => d.gamma.x)
-      //   .attr('cy', d => d.gamma.y)
-      //   .attr('fill', d => this.colorInterpolator(d.i))
-
-      // // Exit
-      // cursorGroup.exit().remove()
-    },
     dragSubject () {
       let subject
       let closestDistance2 = math.pow(this.dragRadiusThreshold, 2)

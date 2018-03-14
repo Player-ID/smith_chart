@@ -1,5 +1,5 @@
 import * as math from 'mathjs'
-import { CENTER, UNIT_RADIUS } from './constants.js'
+import { CENTER, UNIT_RADIUS } from './chartConfig.js'
 
 function calculateResistanceCircle (value) {
   if (value < 0) {

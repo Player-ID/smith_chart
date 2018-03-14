@@ -1,10 +1,14 @@
 <template>
-  <Chart :cursors="cursors"/>
+  <Chart
+    :cursor-options="cursorOptions"
+    :cursors="cursors"
+  />
 </template>
 
 <script>
 import Chart from './components/Chart'
 
+import * as d3 from 'd3'
 import * as calc from './js/calculations.js'
 
 export default {
@@ -14,8 +18,11 @@ export default {
   },
   data: () => {
     return {
-      maxCursors: 10,
       isFull: false,
+      cursorOptions: {
+        maxCursors: 10,
+        colorInterpolator: d3.scaleOrdinal().range(d3.schemeCategory10)
+      },
       cursors: []
     }
   },
