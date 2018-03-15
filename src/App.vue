@@ -2,6 +2,7 @@
   <Chart
     :cursor-options="cursorOptions"
     :cursors="cursors"
+    @dragMove="updateData"
   />
 </template>
 
@@ -9,7 +10,7 @@
 import Chart from './components/Chart'
 
 import * as d3 from 'd3'
-import * as calc from './js/calculations.js'
+import { CENTER } from './js/chartConfig'
 
 export default {
   name: 'App',
@@ -34,16 +35,21 @@ export default {
       this.isFull = this.cursors.length + 1 > this.maxCursors
       if (this.isFull) return
 
-      const defaultResistance = 1
-      const defaultReactance = 0
-
       var cursor = {}
       cursor.i = this.cursors.length + 1
-      cursor.resistance = calc.calculateResistanceCircle(defaultResistance)
-      cursor.reactance = calc.calculateReactanceCircle(defaultReactance)
-      cursor.gamma = calc.calculateGamma(defaultResistance, defaultReactance)
+      cursor.resistance = 1
+      cursor.reactance = 0
+      cursor.gamma = { r: 0, phi: 0 }
+      cursor.swr = 0
+      cursor.x = CENTER
+      cursor.y = CENTER
 
       this.cursors.push(cursor)
+    },
+    updateData (event) {
+      console.log(event)
+      this.cursors[event.i - 1].x = CENTER + event.x
+      this.cursors[event.i - 1].y = CENTER - event.y
     }
   }
 }

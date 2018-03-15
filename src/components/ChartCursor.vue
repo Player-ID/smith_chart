@@ -1,9 +1,10 @@
 <template>
   <g :id="groupId">
     <circle
-      :cx="cursor.resistance.cx"
-      :cy="cursor.resistance.cy"
-      :r="cursor.resistance.r"
+      :cx="resistance.cx"
+      :cy="resistance.cy"
+      :r="resistance.r"
+      :visibility="resistance.visibility"
       :stroke="color"
       class="resistance-circle"
       stroke-width="3"
@@ -14,34 +15,35 @@
       :y1="realAxis.y1"
       :x2="realAxis.x2"
       :y2="realAxis.y2"
+      :visibility="!reactance.arcVisibility"
       :stroke="color"
-      :visibility="reactanceLineVisibility"
       class="reactance-line"
       stroke-width="3"
     />
     <circle
-      :cx="cursor.reactance.cx"
-      :cy="reactanceArcCy"
-      :r="reactanceArcR"
+      :cx="reactance.cx"
+      :cy="reactance.cy"
+      :r="reactance.r"
+      :visibility="reactance.arcVisibility"
       :stroke="color"
-      :visibility="reactanceArcVisibility"
       class="reactance-arc"
       stroke-width="3"
       fill="none"
       clip-path="url(#boundary-path)"
     />
     <line
-      :x1="electricLengthStart.x1"
-      :y1="electricLengthStart.y1"
-      :x2="electricLengthEnd.x2"
-      :y2="electricLengthEnd.y2"
+      :x1="electricLength.x1"
+      :y1="electricLength.y1"
+      :x2="electricLength.x2"
+      :y2="electricLength.y2"
+      :visibility="electricLength.visibility"
       :stroke="color"
       class="electric-length"
       stroke-width="3"
     />
     <circle
-      :cx="cursor.gamma.x"
-      :cy="cursor.gamma.y"
+      :cx="cursor.x"
+      :cy="cursor.y"
       :fill="color"
       class="marker"
       r="5"
@@ -50,7 +52,6 @@
 </template>
 
 <script>
-// import * as calc from '../js/calculations.js'
 import { CENTER, UNIT_RADIUS, OUTER_RADIUS } from '../js/chartConfig'
 
 export default {
@@ -69,15 +70,13 @@ export default {
   },
   data () {
     return {
+      displayElectricLengthThreshold: 0.01,
+      displayResistanceThreshold: 1000,
       realAxis: {
         x1: CENTER - UNIT_RADIUS,
         y1: CENTER,
         x2: CENTER + UNIT_RADIUS,
         y2: CENTER
-      },
-      electricLengthStart: {
-        x1: CENTER,
-        y1: CENTER
       }
     }
   },
@@ -88,29 +87,67 @@ export default {
     color () {
       return this.colorInterpolator(this.cursor.i)
     },
-    reactanceLineVisibilty () {
-      return this.cursor.reactance.value === 0 ? 'visible' : 'hidden'
+    resistance () {
+      let circle = this.calculateResistanceCircle(this.cursor.resistance)
+      circle.visibility = circle.value < this.displayResistanceThreshold ? 'visible' : 'hidden'
+      return circle
     },
-    reactanceArcVisibility () {
-      return this.cursor.reactance.value !== 0 ? 'visible' : 'hidden'
+    reactance () {
+      let arc = this.calculateReactanceCircle(this.cursor.reactance)
+      arc.arcVisibility = 'visible'
+      if (arc.value === 0) {
+        arc.cy = 0
+        arc.r = 0
+        arc.arcVisibility = 'hidden'
+      }
+      return arc
     },
-    reactanceArcCy () {
-      return Math.abs(this.cursor.reactance.cy) === Infinity
-        ? 0
-        : this.cursor.reactance.cy
-    },
-    reactanceArcR () {
-      return Math.abs(this.cursor.reactance.r) === Infinity
-        ? 0
-        : this.cursor.reactance.r
-    },
-    electricLengthEnd () {
-      const x2 = CENTER + OUTER_RADIUS * Math.cos(this.cursor.gamma.gamma.phi)
-      const y2 = CENTER - OUTER_RADIUS * Math.sin(this.cursor.gamma.gamma.phi)
+    electricLength () {
+      const visibility = this.cursor.gamma.r > this.displayElectricLengthThreshold ? 'visible' : 'hidden'
+      return {
+        x1: CENTER,
+        y1: CENTER,
+        x2: CENTER + OUTER_RADIUS * Math.cos(this.cursor.gamma.phi),
+        y2: CENTER - OUTER_RADIUS * Math.sin(this.cursor.gamma.phi),
+        visibility: visibility
+      }
+    }
+  },
+  methods: {
+    calculateResistanceCircle (value) {
+      if (value < 0) {
+        window.alert('Resistance can\'t be negative!')
+      } else if (value === Infinity) {
+        return {
+          value: value,
+          cx: CENTER + UNIT_RADIUS,
+          cy: CENTER,
+          r: 1
+        }
+      }
 
       return {
-        x2: x2,
-        y2: y2
+        value: value,
+        cx: CENTER + UNIT_RADIUS * value / (value + 1),
+        cy: CENTER,
+        r: Math.abs(UNIT_RADIUS / (value + 1))
+      }
+    },
+    calculateReactanceCircle (value) {
+      if (Math.abs(value) === Infinity) {
+        return {
+          value: value,
+          cx: CENTER + UNIT_RADIUS,
+          cy: CENTER,
+          r: 1
+        }
+      }
+
+      return {
+        value: value,
+        cx: CENTER + UNIT_RADIUS,
+        cy: CENTER - UNIT_RADIUS / value,
+        r: Math.abs(UNIT_RADIUS / value)
       }
     }
   }

@@ -1,6 +1,7 @@
 <template>
   <div id="chart-area">
     <svg
+      id="svg-area"
       :width="width"
       :height="width"
       :viewport="viewport"
@@ -48,8 +49,8 @@ import ChartCursor from './ChartCursor.vue'
 import * as d3 from 'd3'
 import * as math from 'mathjs'
 
-import { WIDTH as SVG_WIDTH } from '../js/chartConfig.js'
-import * as calc from '../js/calculations.js'
+import { WIDTH as SVG_WIDTH, CENTER } from '../js/chartConfig.js'
+import { calculateResistanceCircle } from '../js/calculations.js'
 
 export default {
   name: 'Chart',
@@ -87,8 +88,16 @@ export default {
       return `0 0 ${SVG_WIDTH} ${SVG_WIDTH}`
     },
     chartBounds () {
-      return calc.calculateResistanceCircle(0)
+      return calculateResistanceCircle(0)
     }
+  },
+  mounted () {
+    d3.select('#svg-area')
+      .call(d3.drag()
+        .subject(this.dragSubject)
+        .on('start', this.dragStarted)
+        .on('drag', this.dragged)
+      )
   },
   methods: {
     dragSubject () {
@@ -96,8 +105,8 @@ export default {
       let closestDistance2 = math.pow(this.dragRadiusThreshold, 2)
 
       this.cursors.forEach(function (cursor, i) {
-        const dx = d3.event.x - cursor.gamma.x
-        const dy = d3.event.y - cursor.gamma.y
+        const dx = d3.event.x - cursor.x
+        const dy = d3.event.y - cursor.y
         const distance2 = dx * dx + dy * dy
         if (distance2 < closestDistance2) {
           subject = cursor
@@ -108,13 +117,15 @@ export default {
       return subject
     },
     dragStarted () {
-      d3.select('#cursor' + d3.event.subject.i).raise()
+      d3.select(`#cursor-${d3.event.subject.i}`).raise()
+      console.log(d3.event.subject.i)
     },
     dragged () {
-      // const cursor = d3.event.subject
+      const cursor = d3.event.subject
 
-      // const x = d3.event.x - CENTER
-      // const y = -(d3.event.y - CENTER)
+      const x = d3.event.x - CENTER
+      const y = -(d3.event.y - CENTER)
+      this.$emit('dragMove', { i: cursor.i, x: x, y: y })
 
       // const normX = Math.sign(x) *
       //   Math.min(Math.abs(x), UNIT_RADIUS) / UNIT_RADIUS
