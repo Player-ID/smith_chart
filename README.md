@@ -1,7 +1,32 @@
-# Interactive Smith Chart
+# Smith Chart
 
-An online interactive Smith chart for learning and general use.
+An interactive Smith chart for learning and general use.
 
 Libraries Used:
 * [D3.js](https://d3js.org/)
 * [math.js](http://mathjs.org/)
+* [Vue.js](https://vuejs.org/)
+
+## Build Setup
+
+``` bash
+# install dependencies
+npm install
+
+# serve with hot reload at localhost:8080
+npm run dev
+
+# build for production with minification
+npm run build
+
+# build for production and view the bundle analyzer report
+npm run build --report
+
+# run unit tests
+npm run unit
+
+# run all tests
+npm test
+```
+
+For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
