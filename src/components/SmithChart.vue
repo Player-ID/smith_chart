@@ -115,14 +115,7 @@ export default {
         .attr('class', 'resistance-circle')
         .attr('stroke-width', 3)
         .attr('fill', 'none')
-      cursorGroupEnter.append('line')
-        .attr('class', 'reactance-line')
-        .attr('x1', CENTER - UNIT_RADIUS)
-        .attr('y1', CENTER)
-        .attr('x2', CENTER + UNIT_RADIUS)
-        .attr('y2', CENTER)
-        .attr('stroke-width', 3)
-      cursorGroupEnter.append('circle')
+      cursorGroupEnter.append('path')
         .attr('class', 'reactance-arc')
         .attr('stroke-width', 3)
         .attr('fill', 'none')
@@ -143,20 +136,16 @@ export default {
         .attr('cx', d => d.resistance.cx)
         .attr('cy', d => d.resistance.cy)
         .attr('r', d => d.resistance.r)
-        .attr('stroke', d => this.colorInterpolator(d.i))
-      cursorGroupUpdate.select('.reactance-line')
-        .attr('visibility', d => d.reactance.lineVisibility)
+        .attr('visibility', d => d.reactance.visibility)
         .attr('stroke', d => this.colorInterpolator(d.i))
       cursorGroupUpdate.select('.reactance-arc')
-        .attr('cx', d => d.reactance.cx)
-        .attr('cy', d => d.reactance.cy)
-        .attr('r', d => d.reactance.r)
-        .attr('visibility', d => d.reactance.arcVisibility)
+        .attr('d', d => d.reactance.path)
+        .attr('visibility', d => d.reactance.visibility)
         .attr('stroke', d => this.colorInterpolator(d.i))
       cursorGroupUpdate.select('.electric-length')
         .attr('x2', d => d.electricLength.x)
         .attr('y2', d => d.electricLength.y)
-        .attr('visibility', d => d.electricLength.visiblity)
+        .attr('visibility', d => d.electricLength.visibility)
         .attr('stroke', d => this.colorInterpolator(d.i))
       cursorGroupUpdate.select('.marker')
         .attr('cx', d => d.x)
@@ -190,11 +179,8 @@ export default {
 
       const x = d3.event.x - CENTER
       const y = -(d3.event.y - CENTER)
-
-      const normX = Math.sign(x) *
-        Math.min(Math.abs(x), UNIT_RADIUS) / UNIT_RADIUS
-      const normY = Math.sign(y) *
-        Math.min(Math.abs(y), UNIT_RADIUS) / UNIT_RADIUS
+      const normX = x / UNIT_RADIUS
+      const normY = y / UNIT_RADIUS
 
       const r = Math.sqrt(math.pow(normX, 2) + math.pow(normY, 2))
       let phi
@@ -208,7 +194,7 @@ export default {
           : -Math.PI + Math.atan(normY / normX)
       }
       const gammaPolar = {
-        r: r,
+        r: r > 1 ? 1 : r,
         phi: phi
       }
 
@@ -229,7 +215,8 @@ export default {
           value: value,
           cx: CENTER + UNIT_RADIUS,
           cy: CENTER,
-          r: 1
+          r: 1,
+          visibility: 'visible'
         }
       }
 
@@ -237,46 +224,32 @@ export default {
         value: value,
         cx: CENTER + UNIT_RADIUS * value / (value + 1),
         cy: CENTER,
-        r: Math.abs(UNIT_RADIUS / (value + 1))
+        r: Math.abs(UNIT_RADIUS / (value + 1)),
+        visbility: 'visible'
       }
     },
     calculateReactanceCircle (value) {
+      let path = `M${CENTER + UNIT_RADIUS} ${CENTER} `
       if (value === 0) {
-        return {
-          value: value,
-          cx: CENTER - UNIT_RADIUS,
-          cy: CENTER,
-          r: 1,
-          arcVisibility: 'hidden'
-        }
-      } else if (Math.abs(value) === Infinity) {
-        return {
-          value: value,
-          cx: CENTER + UNIT_RADIUS,
-          cy: CENTER,
-          r: 1,
-          lineVisibility: 'hidden'
-        }
+        path += `L ${CENTER - UNIT_RADIUS} ${CENTER}`
+      } else {
+        const r = Math.abs(UNIT_RADIUS / value)
+        const eY = value > 0 ? -2 * r : 2 * r
+        path += `a ${r} ${r} 0 0 1 0 ${eY}`
       }
 
       return {
-        value: value,
-        cx: CENTER + UNIT_RADIUS,
-        cy: CENTER - UNIT_RADIUS / value,
-        r: Math.abs(UNIT_RADIUS / value),
-        lineVisibility: 'hidden'
+        path: path,
+        visibility: 'visible'
       }
     },
     calculateElectricLength (gamma) {
       return {
         x: CENTER + OUTER_RADIUS * Math.cos(gamma.phi),
         y: CENTER - OUTER_RADIUS * Math.sin(gamma.phi),
-        visiblity: gamma.r > 0.01 ? 'visible' : 'hidden'
+        visibility: gamma.r > 0.01 ? 'visible' : 'hidden'
       }
     }
   }
 }
 </script>
-
-<style scoped>
-</style>
