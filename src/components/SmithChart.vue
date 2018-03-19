@@ -183,7 +183,7 @@ export default {
       return subject
     },
     dragStarted () {
-      d3.select('#cursor' + d3.event.subject.i).raise()
+      d3.select('#cursor-' + d3.event.subject.i).raise()
     },
     dragged () {
       const cursorShape = d3.event.subject
@@ -207,25 +207,19 @@ export default {
           ? Math.PI + Math.atan(normY / normX)
           : -Math.PI + Math.atan(normY / normX)
       }
-
-      const gamma = math.complex({ r: r, phi: phi })
-      const impedance = math.divide(math.add(1, gamma), math.subtract(1, gamma))
-
-      const resistance = math.re(impedance)
-      const reactance = math.im(impedance)
-      // cursor.resistance = calc.calculateResistanceCircle(resistance < 0 ? 0 : resistance)
-      // cursor.reactance = calc.calculateReactanceCircle(reactance)
-      // cursor.gamma = {
-      //   gamma: gamma,
-      //   x: CENTER + UNIT_RADIUS * r * Math.cos(phi),
-      //   y: CENTER - UNIT_RADIUS * r * Math.sin(phi)
-      // }
-      cursorShape.cursor.gamma = {
+      const gammaPolar = {
         r: r,
         phi: phi
       }
-      cursorShape.cursor.resistance = resistance
+
+      const gamma = math.complex(gammaPolar)
+      const impedance = math.divide(math.add(1, gamma), math.subtract(1, gamma))
+      const resistance = math.re(impedance)
+      const reactance = math.im(impedance)
+
+      cursorShape.cursor.resistance = resistance < 0 ? 0 : resistance
       cursorShape.cursor.reactance = reactance
+      cursorShape.cursor.gamma = gammaPolar
     },
     calculateResistanceCircle (value) {
       if (value < 0) {
