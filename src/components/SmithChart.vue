@@ -156,7 +156,7 @@ export default {
       cursorGroupUpdate.select('.electric-length')
         .attr('x2', d => d.electricLength.x)
         .attr('y2', d => d.electricLength.y)
-        .attr('visibility', d => d.electricLength.visiblity)
+        .attr('visibility', d => d.electricLength.visibility)
         .attr('stroke', d => this.colorInterpolator(d.i))
       cursorGroupUpdate.select('.marker')
         .attr('cx', d => d.x)
@@ -190,11 +190,8 @@ export default {
 
       const x = d3.event.x - CENTER
       const y = -(d3.event.y - CENTER)
-
-      const normX = Math.sign(x) *
-        Math.min(Math.abs(x), UNIT_RADIUS) / UNIT_RADIUS
-      const normY = Math.sign(y) *
-        Math.min(Math.abs(y), UNIT_RADIUS) / UNIT_RADIUS
+      const normX = x / UNIT_RADIUS
+      const normY = y / UNIT_RADIUS
 
       const r = Math.sqrt(math.pow(normX, 2) + math.pow(normY, 2))
       let phi
@@ -208,7 +205,7 @@ export default {
           : -Math.PI + Math.atan(normY / normX)
       }
       const gammaPolar = {
-        r: r,
+        r: r > 1 ? 1 : r,
         phi: phi
       }
 
@@ -271,12 +268,9 @@ export default {
       return {
         x: CENTER + OUTER_RADIUS * Math.cos(gamma.phi),
         y: CENTER - OUTER_RADIUS * Math.sin(gamma.phi),
-        visiblity: gamma.r > 0.01 ? 'visible' : 'hidden'
+        visibility: gamma.r > 0.01 ? 'visible' : 'hidden'
       }
     }
   }
 }
 </script>
-
-<style scoped>
-</style>
