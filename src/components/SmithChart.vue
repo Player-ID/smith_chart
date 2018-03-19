@@ -235,7 +235,8 @@ export default {
       } else {
         const r = Math.abs(UNIT_RADIUS / value)
         const eY = value > 0 ? -2 * r : 2 * r
-        path += `a ${r} ${r} 0 0 1 0 ${eY}`
+        const sweepArc = value > 0 ? 1 : 0
+        path += `a ${r} ${r} 0 0 ${sweepArc} 0 ${eY}`
       }
 
       return {
