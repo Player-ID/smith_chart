@@ -1,20 +1,29 @@
 <template>
-  <Chart :cursors="cursors"/>
+  <div>
+    <button @click="spawnCursor">Add Cursor</button>
+    <SmithChart
+      v-model="cursors"
+      :cursor-options="cursorOptions"
+    />
+  </div>
 </template>
 
 <script>
-import Chart from './components/Chart'
+import SmithChart from './components/SmithChart'
 
-import * as calc from './js/calculations.js'
+import * as d3 from 'd3'
 
 export default {
   name: 'App',
   components: {
-    Chart
+    SmithChart
   },
   data: () => {
     return {
-      maxCursors: 10,
+      cursorOptions: {
+        maxCursors: 10,
+        colorScale: d3.schemeCategory10
+      },
       isFull: false,
       cursors: []
     }
@@ -24,17 +33,17 @@ export default {
   },
   methods: {
     spawnCursor () {
-      this.isFull = this.cursors.length + 1 > this.maxCursors
+      this.isFull = this.cursors.length + 1 > this.cursorOptions.maxCursors
       if (this.isFull) return
-
-      const defaultResistance = 1
-      const defaultReactance = 0
 
       var cursor = {}
       cursor.i = this.cursors.length + 1
-      cursor.resistance = calc.calculateResistanceCircle(defaultResistance)
-      cursor.reactance = calc.calculateReactanceCircle(defaultReactance)
-      cursor.gamma = calc.calculateGamma(defaultResistance, defaultReactance)
+      cursor.resistance = 1
+      cursor.reactance = 0
+      cursor.gamma = {
+        r: 0,
+        phi: 0
+      }
 
       this.cursors.push(cursor)
     }
