@@ -6,16 +6,16 @@
 import { mapState, mapGetters } from 'vuex'
 import * as d3 from 'd3'
 import math from 'mathjs'
-import { WIDTH, CENTER, UNIT_RADIUS, OUTER_RADIUS } from '../js/chartDimensions.js'
+
 import smithChartSvg from '../assets/smith_chart.svg'
+import { WIDTH, CENTER, UNIT_RADIUS, OUTER_RADIUS } from '../js/chartDimensions.js'
 
 export default {
   name: 'SmithChart',
   data: () => {
     return {
       dragRadiusThreshold: 20,
-      cursorWrapper: null,
-      cursorShapes: null
+      cursorWrapper: null
     }
   },
   computed: {
@@ -24,18 +24,27 @@ export default {
     }),
     ...mapGetters({
       cursors: 'allCursors'
-    })
-  },
-  watch: {
-    cursors () {
-      this.updateCursorData()
-      this.updateCursors()
+    }),
+    cursorShapes () {
+      return this.cursors.map((cursor) => {
+        return {
+          id: cursor.id,
+          x: CENTER + UNIT_RADIUS * cursor.gamma.r * Math.cos(cursor.gamma.phi),
+          y: CENTER - UNIT_RADIUS * cursor.gamma.r * Math.sin(cursor.gamma.phi),
+          resistance: this.calculateResistanceCircle(cursor.resistance),
+          reactance: this.calculateReactanceCircle(cursor.reactance),
+          electricLength: this.calculateElectricLength(cursor.gamma)
+        }
+      })
     }
   },
   mounted () {
     this.initialize()
-    this.updateCursorData()
-    this.updateCursors()
+    // Initialize watcher for cursorShapes after DOM created to prevent
+    // d3 manipulating the DOM before initial render
+    this.$watch('cursorShapes',
+      (newVal, oldVal) => { this.updateCursors() },
+      { immediate: true })
   },
   methods: {
     initialize () {
@@ -47,8 +56,7 @@ export default {
         .call(d3.drag()
           .subject(this.dragSubject)
           .on('start', this.dragStarted)
-          .on('drag', this.dragged)
-        )
+          .on('drag', this.dragged))
 
       chart.append('image')
         .attr('id', 'smith-chart-image')
@@ -77,18 +85,6 @@ export default {
 
       this.cursorWrapper = chart.append('g')
         .attr('id', 'cursors')
-    },
-    updateCursorData () {
-      this.cursorShapes = this.cursors.map((cursor) => {
-        return {
-          i: cursor.id,
-          x: CENTER + UNIT_RADIUS * cursor.gamma.r * Math.cos(cursor.gamma.phi),
-          y: CENTER - UNIT_RADIUS * cursor.gamma.r * Math.sin(cursor.gamma.phi),
-          resistance: this.calculateResistanceCircle(cursor.resistance),
-          reactance: this.calculateReactanceCircle(cursor.reactance),
-          electricLength: this.calculateElectricLength(cursor.gamma)
-        }
-      })
     },
     updateCursors () {
       // Data join
@@ -123,20 +119,20 @@ export default {
         .attr('cy', d => d.resistance.cy)
         .attr('r', d => d.resistance.r)
         .attr('visibility', d => d.reactance.visibility)
-        .attr('stroke', d => this.colorInterpolator(d.i))
+        .attr('stroke', d => this.colorInterpolator(d.id))
       cursorGroupUpdate.select('.reactance-arc')
         .attr('d', d => d.reactance.path)
         .attr('visibility', d => d.reactance.visibility)
-        .attr('stroke', d => this.colorInterpolator(d.i))
+        .attr('stroke', d => this.colorInterpolator(d.id))
       cursorGroupUpdate.select('.electric-length')
         .attr('x2', d => d.electricLength.x)
         .attr('y2', d => d.electricLength.y)
         .attr('visibility', d => d.electricLength.visibility)
-        .attr('stroke', d => this.colorInterpolator(d.i))
+        .attr('stroke', d => this.colorInterpolator(d.id))
       cursorGroupUpdate.select('.marker')
         .attr('cx', d => d.x)
         .attr('cy', d => d.y)
-        .attr('fill', d => this.colorInterpolator(d.i))
+        .attr('fill', d => this.colorInterpolator(d.id))
 
       // Exit
       cursorGroup.exit().remove()
@@ -189,9 +185,12 @@ export default {
       const resistance = math.re(impedance)
       const reactance = math.im(impedance)
 
-      cursorShape.cursor.resistance = resistance < 0 ? 0 : resistance
-      cursorShape.cursor.reactance = reactance
-      cursorShape.cursor.gamma = gammaPolar
+      this.$store.commit('updateCursorData', {
+        id: cursorShape.id,
+        resistace: resistance < 0 ? 0 : resistance,
+        reactance: reactance,
+        gamma: gammaPolar
+      })
     },
     calculateResistanceCircle (value) {
       if (value < 0) {
