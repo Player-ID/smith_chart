@@ -5,13 +5,18 @@
     menu="menu"
     side="right"
   >
-    <div slot="menu">
+    <TabView slot="menu">
       <button @click="addCursor()">Add Cursor</button>
-    </div>
+      <ControlCursor
+        v-for="(id, index) in activeCursors"
+        :key="index"
+        :cursor-id="id"
+      />
+    </TabView>
     <div slot="panel">
-      <header>
+      <div>
         <button class="toggle-button">☰</button>
-      </header>
+      </div>
       <SmithChart/>
     </div>
   </Slideout>
@@ -19,11 +24,20 @@
 
 <script>
 import Slideout from './components/Slideout'
+import TabView from './components/TabView'
+import ControlCursor from './components/ControlCursor'
 import SmithChart from './components/SmithChart'
+
+import { mapState } from 'vuex'
 
 export default {
   name: 'App',
-  components: { Slideout, SmithChart },
+  components: { Slideout, TabView, ControlCursor, SmithChart },
+  computed: {
+    ...mapState({
+      activeCursors: state => state.activeCursors
+    })
+  },
   methods: {
     addCursor () {
       this.$store.commit('addCursor')
@@ -44,6 +58,8 @@ body {
 }
 
 .toggle-button {
-  float: right;
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 </style>
