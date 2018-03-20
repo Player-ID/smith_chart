@@ -187,14 +187,14 @@ export default {
 
       this.$store.commit('updateCursorData', {
         id: cursorShape.id,
-        resistace: resistance < 0 ? 0 : resistance,
+        resistance: resistance < 0 ? 0 : resistance,
         reactance: reactance,
         gamma: gammaPolar
       })
     },
     calculateResistanceCircle (value) {
       if (value < 0) {
-        window.alert('Resistance can\'t be negative!')
+        value = 0
       } else if (value === Infinity) {
         return {
           value: value,
