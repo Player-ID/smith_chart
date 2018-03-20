@@ -12,7 +12,7 @@ import { WIDTH, CENTER, UNIT_RADIUS, OUTER_RADIUS } from '../js/chartDimensions.
 
 export default {
   name: 'SmithChart',
-  data: () => {
+  data () {
     return {
       dragRadiusThreshold: 20,
       cursorWrapper: null
