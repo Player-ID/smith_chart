@@ -4,8 +4,6 @@ import Vue from 'vue'
 import App from './App'
 import store from './store'
 
-Vue.config.productionTip = process.env.NODE_ENV === 'production'
-
 /* eslint-disable no-new */
 new Vue({
   el: '#app',

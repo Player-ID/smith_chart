@@ -3,65 +3,39 @@
 </template>
 
 <script>
+import { mapState, mapGetters } from 'vuex'
 import * as d3 from 'd3'
-import * as math from 'mathjs'
+import math from 'mathjs'
 import { WIDTH, CENTER, UNIT_RADIUS, OUTER_RADIUS } from '../js/chartDimensions.js'
 import smithChartSvg from '../assets/smith_chart.svg'
 
 export default {
   name: 'SmithChart',
-  model: {
-    prop: 'cursors',
-    event: 'update'
-  },
-  props: {
-    cursorOptions: {
-      type: Object,
-      default () {
-        return {
-          maxCursors: 10,
-          colorScale: d3.schemeCategory10
-        }
-      }
-    },
-    cursors: {
-      type: Array,
-      default () {
-        return []
-      }
-    }
-  },
   data: () => {
     return {
       dragRadiusThreshold: 20,
-      cursorWrapper: null
+      cursorWrapper: null,
+      cursorShapes: null
     }
   },
   computed: {
-    colorInterpolator () {
-      return d3.scaleOrdinal().range(this.cursorOptions.colorScale)
-    },
-    cursorShapes () {
-      return this.cursors.map((cursor) => {
-        return {
-          i: cursor.i,
-          cursor: cursor,
-          x: CENTER + UNIT_RADIUS * cursor.gamma.r * Math.cos(cursor.gamma.phi),
-          y: CENTER - UNIT_RADIUS * cursor.gamma.r * Math.sin(cursor.gamma.phi),
-          resistance: this.calculateResistanceCircle(cursor.resistance),
-          reactance: this.calculateReactanceCircle(cursor.reactance),
-          electricLength: this.calculateElectricLength(cursor.gamma)
-        }
-      })
-    }
+    ...mapState({
+      colorInterpolator: state => state.cursorOptions.colorInterpolator
+    }),
+    ...mapGetters({
+      cursors: 'allCursors'
+    })
   },
   watch: {
-    cursorShapes () {
+    cursors () {
+      this.updateCursorData()
       this.updateCursors()
     }
   },
   mounted () {
     this.initialize()
+    this.updateCursorData()
+    this.updateCursors()
   },
   methods: {
     initialize () {
@@ -103,6 +77,18 @@ export default {
 
       this.cursorWrapper = chart.append('g')
         .attr('id', 'cursors')
+    },
+    updateCursorData () {
+      this.cursorShapes = this.cursors.map((cursor) => {
+        return {
+          i: cursor.id,
+          x: CENTER + UNIT_RADIUS * cursor.gamma.r * Math.cos(cursor.gamma.phi),
+          y: CENTER - UNIT_RADIUS * cursor.gamma.r * Math.sin(cursor.gamma.phi),
+          resistance: this.calculateResistanceCircle(cursor.resistance),
+          reactance: this.calculateReactanceCircle(cursor.reactance),
+          electricLength: this.calculateElectricLength(cursor.gamma)
+        }
+      })
     },
     updateCursors () {
       // Data join
