@@ -185,7 +185,7 @@ export default {
       const resistance = math.re(impedance)
       const reactance = math.im(impedance)
 
-      this.$store.commit('updateCursorData', {
+      this.$store.commit('updateCursor', {
         id: cursorShape.id,
         resistance: resistance < 0 ? 0 : resistance,
         reactance: reactance,

@@ -6,7 +6,7 @@
     side="right"
   >
     <TabView slot="menu">
-      <button @click="addCursor()">Add Cursor</button>
+      <button @click="addCursor">Add Cursor</button>
       <ControlCursor
         v-for="(id, index) in activeCursors"
         :key="index"

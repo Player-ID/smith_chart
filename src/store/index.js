@@ -33,8 +33,8 @@ const mutations = {
       }
     })
   },
-  updateCursorData (state, payload) {
-    Vue.set(state.cursors, payload.id, payload)
+  updateCursor (state, payload) {
+    state.cursors[payload.id] = payload
   },
   removeCursor (state, id) {
     delete state.cursors[id]
