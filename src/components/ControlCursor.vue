@@ -1,42 +1,46 @@
 <template>
   <div>
-    <h1>{{ cursorId }}</h1>
-    <label>Resistance</label>
-    <input
+    <h3>Cursor {{ cursorId }}</h3>
+    <h4>Impedance</h4>
+    <InputText
       :value="cursor.resistance"
-      @input="debouncedUpdate('resistance', $event)">
-    <br>
-    <label>Reactance</label>
-    <input
+      field="Resistance"
+      @update:value="event => debouncedUpdate('resistance', event)"
+    />
+    <InputText
       :value="cursor.reactance"
-      @input="debouncedUpdate('reactance', $event)">
-    <br>
-    <label>Reflection Coefficient</label>
-    <br>
-    <label>|&Gamma;|</label>
-    <input
+      field="Reactance"
+      @update:value="event => debouncedUpdate('reactance', event)"
+    />
+    <h4>Reflection Coefficient</h4>
+    <InputText
       :value="cursor.gamma.r"
-      @input="debouncedUpdate('gamma.r', $event)">
-    <br>
-    <label>&ang;&Gamma;</label>
-    <input
+      field="|Γ|"
+      @update:value="event => debouncedUpdate('gamma.r', event)"
+    />
+    <InputText
       :value="cursor.gamma.phi"
-      @input="debouncedUpdate('gamma.phi', $event)">
-    <br>
-    <label>SWR</label>
-    <input
+      field="∠Γ"
+      @update:value="event => debouncedUpdate('gamma.phi', event)"
+    />
+    <InputText
       :value="derived.swr"
-      @input="debouncedUpdate('derived.swr', $event)">
+      field="SWR"
+      @update:value="event => debouncedUpdate('derived.swr', event)"
+    />
 
     <button @click="remove">Remove Cursor</button>
   </div>
 </template>
 
 <script>
+import InputText from './InputText'
+
 import _ from 'lodash'
 
 export default {
   name: 'ControlCursor',
+  components: { InputText },
   props: {
     cursorId: {
       type: Number,
