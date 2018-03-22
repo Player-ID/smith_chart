@@ -61,7 +61,7 @@ export default {
   watch: {
     cursorOrigin: {
       handler (newVal, oldVal) {
-        this.cursor = JSON.parse(JSON.stringify(this.cursorOrigin))
+        this.cursor = _.cloneDeep(this.cursorOrigin)
       },
       deep: true
     },
