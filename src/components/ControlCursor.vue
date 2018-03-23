@@ -3,28 +3,33 @@
     <h3>Cursor {{ cursorId }}</h3>
     <h4>Impedance</h4>
     <InputText
-      :value="cursor.resistance"
+      :value="values.resistance"
+      :errors="errors.resistance"
       field="Resistance"
       @update:value="event => debouncedUpdate('resistance', event)"
     />
     <InputText
-      :value="cursor.reactance"
+      :value="values.reactance"
+      :errors="errors.reactance"
       field="Reactance"
       @update:value="event => debouncedUpdate('reactance', event)"
     />
     <h4>Reflection Coefficient</h4>
     <InputText
-      :value="cursor.gamma.r"
+      :value="values['gamma.r']"
+      :errors="errors['gamma.r']"
       field="|Γ|"
       @update:value="event => debouncedUpdate('gamma.r', event)"
     />
     <InputText
-      :value="cursor.gamma.phi"
+      :value="values['gamma.phi']"
+      :errors="errors['gamma.phi']"
       field="∠Γ"
       @update:value="event => debouncedUpdate('gamma.phi', event)"
     />
     <InputText
-      :value="derived.swr"
+      :value="values['derived.swr']"
+      :errors="errors['derived.swr']"
       field="SWR"
       @update:value="event => debouncedUpdate('derived.swr', event)"
     />
@@ -38,6 +43,9 @@ import InputText from './InputText'
 
 import _ from 'lodash'
 
+import * as validate from '../js/inputValidation.js'
+import { gammaMagnitudeToSwr, swrToGammaMagnitude } from '../js/calculations.js'
+
 export default {
   name: 'ControlCursor',
   components: { InputText },
@@ -49,10 +57,18 @@ export default {
   },
   data () {
     const cursor = _.cloneDeep(this.$store.state.cursorOptions.default)
+    const values = this.mapCursorToData(cursor)
+    const emptiedErrors = this.emptiedErrors()
     return {
-      cursor: cursor,
-      derived: {
-        swr: (1 + cursor.gamma.r) / (1 - cursor.gamma.r)
+      inputFields: ['resistance', 'reactance', 'gamma.r', 'gamma.phi', 'derived.swr'],
+      values: values,
+      errors: emptiedErrors,
+      validators: {
+        'resistance': validate.validateResistance,
+        'reactance': validate.validateReactance,
+        'gamma.r': validate.validateGammaMagnitude,
+        'gamma.phi': validate.validateGammaAngle,
+        'derived.swr': validate.validateSwr
       },
       debouncedProcessInput: _.debounce(this.processInput, 300)
     }
@@ -65,53 +81,54 @@ export default {
   watch: {
     cursorOrigin: {
       handler (newVal, oldVal) {
-        this.cursor = _.cloneDeep(this.cursorOrigin)
+        const cursor = _.cloneDeep(this.cursorOrigin)
+        this.values = this.mapCursorToData(cursor)
+        this.errors = this.emptiedErrors()
       },
       deep: true
-    },
-    'cursor.gamma.r' () {
-      this.derived.swr = (1 + this.cursor.gamma.r) / (1 - this.cursor.gamma.r)
     }
   },
   methods: {
+    mapCursorToData (cursor) {
+      return {
+        'resistance': cursor.resistance,
+        'reactance': cursor.reactance,
+        'gamma.r': cursor.gamma.r,
+        'gamma.phi': cursor.gamma.phi,
+        'derived.swr': gammaMagnitudeToSwr(cursor.gamma.r)
+      }
+    },
+    emptiedErrors () {
+      return {
+        'resistance': [],
+        'reactance': [],
+        'gamma.r': [],
+        'gamma.phi': [],
+        'derived.swr': []
+      }
+    },
     debouncedUpdate (field, e) {
       this.debouncedProcessInput(field, e.target.value)
     },
     processInput (field, input) {
-      let processedValue
-      const parsedInput = parseFloat(input)
-      const trailingDecimal = _.endsWith(input, '.')
-      if (!Number.isNaN(parsedInput) && !trailingDecimal) {
-        switch (field) {
-          case 'resistance':
-          case 'reactance':
-            processedValue = parsedInput
-            break
-          case 'gamma.r':
-            if (parsedInput >= 0 && parsedInput <= 1) {
-              processedValue = parsedInput
-            }
-            break
-          case 'gamma.phi':
-            if (Math.abs(parsedInput) !== Infinity) {
-              processedValue = parsedInput
-            }
-            break
-          case 'derived.swr':
-            if (parsedInput >= 1 && parsedInput <= Infinity) {
-              field = 'gamma.r'
-              const newRho = (parsedInput - 1) / (parsedInput + 1)
-              processedValue = newRho
-            }
-            break
-          default:
-            return
-        }
-      }
+      let validatedInput = this.validators[field](input)
+      this.values[field] = validatedInput.value
+      this.errors[field] = validatedInput.errors
+      if (validatedInput.errors.length !== 0) return
 
-      if (processedValue !== undefined) {
-        this.updateStore(field, processedValue)
+      let updateCommand
+      let newValue
+      switch (field) {
+        case 'derived.swr':
+          updateCommand = 'gamma.r'
+          newValue = swrToGammaMagnitude(validatedInput.value)
+          break
+        default:
+          updateCommand = field
+          newValue = validatedInput.value
+          break
       }
+      this.updateStore(updateCommand, newValue)
     },
     updateStore (field, value) {
       this.$store.commit('updateCursorField', {

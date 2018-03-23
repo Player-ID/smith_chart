@@ -24,7 +24,17 @@ function calculateImpedance (r, phi) {
   }
 }
 
+function swrToGammaMagnitude (swr) {
+  return (swr - 1) / (swr + 1)
+}
+
+function gammaMagnitudeToSwr (r) {
+  return (1 + r) / (1 - r)
+}
+
 export {
   calculateGamma,
-  calculateImpedance
+  calculateImpedance,
+  swrToGammaMagnitude,
+  gammaMagnitudeToSwr
 }

@@ -7,7 +7,7 @@
       @input="update($event)">
     <div v-if="hasErrors">
       !!! {{ priorityError }}
-      <div>
+      <div v-if="hasMultipleErrors">
         <template v-for="(error, key) in errors">
           {{ error }}
           <br :key="key">
@@ -52,6 +52,9 @@ export default {
     },
     hasErrors () {
       return this.errors.length !== 0
+    },
+    hasMultipleErrors () {
+      return this.errors.length > 1
     }
   },
   methods: {
