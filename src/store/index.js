@@ -3,6 +3,13 @@ import Vuex from 'vuex'
 import _ from 'lodash'
 import * as d3 from 'd3'
 
+import {
+  ADD_CURSOR,
+  UPDATE_CURSOR,
+  UPDATE_CURSOR_FIELD,
+  UPDATE_CURSOR_FIELD_COMMANDS,
+  REMOVE_CURSOR
+} from './mutations.js'
 import * as calc from '../js/calculations.js'
 
 Vue.use(Vuex)
@@ -29,7 +36,7 @@ const state = {
 }
 
 const mutations = {
-  addCursor (state) {
+  [ADD_CURSOR] (state) {
     if (state.cursorPool.length === 0) return
 
     const id = state.cursorPool.shift()
@@ -39,34 +46,34 @@ const mutations = {
       ..._.cloneDeep(state.cursorOptions.default)
     })
   },
-  updateCursor (state, payload) {
+  [UPDATE_CURSOR] (state, payload) {
     state.cursors[payload.id] = payload
   },
-  updateCursorField (state, payload) {
+  [UPDATE_CURSOR_FIELD] (state, payload) {
     let cursorToUpdate = state.cursors[payload.id]
     switch (payload.field) {
-      case 'resistance': {
+      case UPDATE_CURSOR_FIELD_COMMANDS.RESISTANCE: {
         const newGamma = calc.calculateGamma(payload.value, cursorToUpdate.reactance)
         cursorToUpdate.resistance = payload.value
         cursorToUpdate.gamma.r = newGamma.r
         cursorToUpdate.gamma.phi = newGamma.phi
         break
       }
-      case 'reactance': {
+      case UPDATE_CURSOR_FIELD_COMMANDS.REACTANCE: {
         const newGamma = calc.calculateGamma(cursorToUpdate.resistance, payload.value)
         cursorToUpdate.reactance = payload.value
         cursorToUpdate.gamma.r = newGamma.r
         cursorToUpdate.gamma.phi = newGamma.phi
         break
       }
-      case 'gamma.r': {
+      case UPDATE_CURSOR_FIELD_COMMANDS.GAMMA_MAG: {
         const newImpedance = calc.calculateImpedance(payload.value, cursorToUpdate.gamma.phi)
         cursorToUpdate.gamma.r = payload.value
         cursorToUpdate.resistance = newImpedance.resistance
         cursorToUpdate.reactance = newImpedance.reactance
         break
       }
-      case 'gamma.phi': {
+      case UPDATE_CURSOR_FIELD_COMMANDS.GAMMA_ANG: {
         const newImpedance = calc.calculateImpedance(cursorToUpdate.gamma.r, payload.value)
         cursorToUpdate.gamma.phi = payload.value
         cursorToUpdate.resistance = newImpedance.resistance
@@ -75,7 +82,7 @@ const mutations = {
       }
     }
   },
-  removeCursor (state, id) {
+  [REMOVE_CURSOR] (state, id) {
     delete state.cursors[id]
     state.cursorPool.push(id)
     state.cursorPool.sort((a, b) => a - b)
