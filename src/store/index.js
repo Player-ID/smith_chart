@@ -75,7 +75,7 @@ const mutations = {
       }
       case UPDATE_CURSOR_FIELD_COMMANDS.GAMMA_ANG: {
         const newImpedance = calc.calculateImpedance(cursorToUpdate.gamma.r, payload.value)
-        cursorToUpdate.gamma.phi = payload.value
+        cursorToUpdate.gamma.phi = calc.reduceGammaAngle(payload.value)
         cursorToUpdate.resistance = newImpedance.resistance
         cursorToUpdate.reactance = newImpedance.reactance
         break

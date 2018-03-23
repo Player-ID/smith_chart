@@ -32,9 +32,22 @@ function gammaMagnitudeToSwr (r) {
   return (1 + r) / (1 - r)
 }
 
+function reduceGammaAngle (angle) {
+  let limitRotation = Math.sign(angle) * (Math.abs(angle) % (2 * Math.PI))
+
+  if (limitRotation < -Math.PI) {
+    limitRotation += 2 * Math.PI
+  } else if (limitRotation > Math.PI) {
+    limitRotation -= 2 * Math.PI
+  }
+
+  return limitRotation
+}
+
 export {
   calculateGamma,
   calculateImpedance,
   swrToGammaMagnitude,
-  gammaMagnitudeToSwr
+  gammaMagnitudeToSwr,
+  reduceGammaAngle
 }
