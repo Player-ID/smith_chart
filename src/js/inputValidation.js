@@ -76,10 +76,23 @@ function validateSwr (input) {
   return validatedInput
 }
 
+function validateElectricLength (input) {
+  let validatedInput = validateNumber(input)
+  if (validatedInput.errors.length !== 0) return validatedInput
+
+  if (validatedInput.value < 0) {
+    validatedInput.errors.push('Length can\'t be negative.')
+  } else if (validatedInput.value === Infinity) {
+    validatedInput.errors.push('Length must be finite.')
+  }
+  return validatedInput
+}
+
 export {
   validateResistance,
   validateReactance,
   validateGammaMagnitude,
   validateGammaAngle,
-  validateSwr
+  validateSwr,
+  validateElectricLength
 }

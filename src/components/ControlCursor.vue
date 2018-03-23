@@ -33,6 +33,12 @@
       field="SWR"
       @update:value="event => debouncedUpdate('derived.swr', event)"
     />
+    <InputText
+      :value="values['derived.electricLength']"
+      :errors="errors['derived.electricLength']"
+      field="Electric Length"
+      @update:value="event => debouncedUpdate('derived.electricLength', event)"
+    />
 
     <button @click="remove">Remove Cursor</button>
   </div>
@@ -44,7 +50,12 @@ import InputText from './InputText'
 import _ from 'lodash'
 
 import * as validate from '../js/inputValidation.js'
-import { gammaMagnitudeToSwr, swrToGammaMagnitude } from '../js/calculations.js'
+import {
+  gammaMagnitudeToSwr,
+  swrToGammaMagnitude,
+  calculateElectricLengthTowardsGenerator,
+  electricLengthToGammaAngle
+} from '../js/calculations.js'
 
 export default {
   name: 'ControlCursor',
@@ -60,7 +71,6 @@ export default {
     const values = this.mapCursorToData(cursor)
     const emptiedErrors = this.emptiedErrors()
     return {
-      inputFields: ['resistance', 'reactance', 'gamma.r', 'gamma.phi', 'derived.swr'],
       values: values,
       errors: emptiedErrors,
       validators: {
@@ -68,7 +78,8 @@ export default {
         'reactance': validate.validateReactance,
         'gamma.r': validate.validateGammaMagnitude,
         'gamma.phi': validate.validateGammaAngle,
-        'derived.swr': validate.validateSwr
+        'derived.swr': validate.validateSwr,
+        'derived.electricLength': validate.validateElectricLength
       },
       debouncedProcessInput: _.debounce(this.processInput, 300)
     }
@@ -95,7 +106,10 @@ export default {
         'reactance': cursor.reactance,
         'gamma.r': cursor.gamma.r,
         'gamma.phi': cursor.gamma.phi,
-        'derived.swr': gammaMagnitudeToSwr(cursor.gamma.r)
+        'derived.swr': gammaMagnitudeToSwr(cursor.gamma.r),
+        'derived.electricLength': (cursor.resistance === 1 && cursor.reactance === 0)
+          ? 0
+          : calculateElectricLengthTowardsGenerator(cursor.gamma.phi)
       }
     },
     emptiedErrors () {
@@ -104,7 +118,8 @@ export default {
         'reactance': [],
         'gamma.r': [],
         'gamma.phi': [],
-        'derived.swr': []
+        'derived.swr': [],
+        'derived.electricLength': []
       }
     },
     debouncedUpdate (field, e) {
@@ -122,6 +137,10 @@ export default {
         case 'derived.swr':
           updateCommand = 'gamma.r'
           newValue = swrToGammaMagnitude(validatedInput.value)
+          break
+        case 'derived.electricLength':
+          updateCommand = 'gamma.phi'
+          newValue = electricLengthToGammaAngle(validatedInput.value)
           break
         default:
           updateCommand = field

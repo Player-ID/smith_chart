@@ -19,7 +19,7 @@ function calculateImpedance (r, phi) {
   const resistance = math.re(impedance)
   const reactance = math.im(impedance)
   return {
-    resistance: resistance,
+    resistance: resistance < 0 ? 0 : resistance,
     reactance: reactance
   }
 }
@@ -44,10 +44,27 @@ function reduceGammaAngle (angle) {
   return limitRotation
 }
 
+function calculateElectricLengthTowardsGenerator (angle) {
+  let mirroredAngle = Math.PI - reduceGammaAngle(angle)
+  if (mirroredAngle < 0) {
+    mirroredAngle += 2 * Math.PI
+  }
+
+  return mirroredAngle * 0.5 / (2 * Math.PI)
+}
+
+function electricLengthToGammaAngle (length) {
+  let mirroredAngle = length * (2 * Math.PI) / 0.5
+  mirroredAngle = reduceGammaAngle(mirroredAngle)
+  return Math.PI - mirroredAngle
+}
+
 export {
   calculateGamma,
   calculateImpedance,
   swrToGammaMagnitude,
   gammaMagnitudeToSwr,
-  reduceGammaAngle
+  reduceGammaAngle,
+  calculateElectricLengthTowardsGenerator,
+  electricLengthToGammaAngle
 }

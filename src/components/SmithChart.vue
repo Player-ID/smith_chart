@@ -9,6 +9,7 @@ import math from 'mathjs'
 
 import smithChartSvg from '../assets/smith_chart.svg'
 import { WIDTH, CENTER, UNIT_RADIUS, OUTER_RADIUS } from '../js/chartDimensions.js'
+import { calculateImpedance } from '../js/calculations.js'
 
 export default {
   name: 'SmithChart',
@@ -175,21 +176,17 @@ export default {
           ? Math.PI + Math.atan(normY / normX)
           : -Math.PI + Math.atan(normY / normX)
       }
-      const gammaPolar = {
+      const gamma = {
         r: r > 1 ? 1 : r,
         phi: phi
       }
 
-      const gamma = math.complex(gammaPolar)
-      const impedance = math.divide(math.add(1, gamma), math.subtract(1, gamma))
-      const resistance = math.re(impedance)
-      const reactance = math.im(impedance)
-
+      const impedance = calculateImpedance(gamma.r, gamma.phi)
       this.$store.commit('updateCursor', {
         id: cursorShape.id,
-        resistance: resistance < 0 ? 0 : resistance,
-        reactance: reactance,
-        gamma: gammaPolar
+        resistance: impedance.resistance,
+        reactance: impedance.reactance,
+        gamma: gamma
       })
     },
     calculateResistanceCircle (value) {
